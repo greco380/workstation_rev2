@@ -9,6 +9,7 @@ interface UiStore {
   // Actions
   openPopup: (config: Omit<PopupConfig, 'id'>) => string
   closePopup: (id: string) => void
+  closeTopmostPopup: () => void
   updatePopupPosition: (id: string, x: number, y: number) => void
   toggleHud: () => void
 }
@@ -29,6 +30,14 @@ export const useUiStore = create<UiStore>((set) => ({
     set((state) => ({
       popups: state.popups.filter((p) => p.id !== id)
     }))
+  },
+
+  closeTopmostPopup: () => {
+    set((state) => {
+      if (state.popups.length === 0) return state
+      const popups = state.popups.slice(0, -1)
+      return { popups }
+    })
   },
 
   updatePopupPosition: (id, x, y) => {

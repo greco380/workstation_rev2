@@ -46,9 +46,12 @@ export interface StorageState {
   inventory: Record<ItemType, number>
 }
 
+/** OutputType: regular ItemType OR special entity types like 'CRANE' */
+export type OutputType = ItemType | 'CRANE'
+
 export interface CraftingState {
   inputSlots: (ItemType | null)[]
-  outputSlot: { type: ItemType; count: number } | null
+  outputSlot: { type: OutputType; count: number } | null
 }
 
 export interface CraneArmState {

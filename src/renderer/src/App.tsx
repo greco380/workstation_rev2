@@ -5,6 +5,7 @@ import { ResourceBar } from './ui/ResourceBar'
 import { Toolbar } from './ui/Toolbar'
 import { PopupManager } from './ui/popups/PopupManager'
 import { useGameStore } from './stores/game-store'
+import { useUiStore } from './stores/ui-store'
 
 export function App(): React.ReactElement {
   useEffect(() => {
@@ -13,37 +14,49 @@ export function App(): React.ReactElement {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
 
-      const store = useGameStore.getState()
+      const gameStore = useGameStore.getState()
+      const uiStore = useUiStore.getState()
 
       switch (e.key) {
         case '1':
-          store.setBuildMode('belt')
+          gameStore.setBuildMode('belt')
           break
         case '2':
-          store.setBuildMode('machine')
+          gameStore.setBuildMode('machine')
           break
         case '3':
-          store.setBuildMode('generator')
+          gameStore.setBuildMode('generator')
           break
         case '4':
-          store.setBuildMode('storage')
+          gameStore.setBuildMode('storage')
           break
         case '5':
-          store.setBuildMode('crafting_table')
+          gameStore.setBuildMode('crafting_table')
           break
         case '6':
-          store.setBuildMode('crane_arm')
+          gameStore.setBuildMode('crane_arm')
           break
         case 'x':
         case 'X':
-          store.setBuildMode('delete')
+          gameStore.setBuildMode('delete')
+          break
+        case 'q':
+        case 'Q':
+          if (uiStore.popups.length > 0) {
+            // Close only the topmost popup layer
+            uiStore.closeTopmostPopup()
+          } else {
+            // Stop using currently selected item
+            gameStore.setBuildMode(null)
+          }
           break
         case 'Escape':
-          store.setBuildMode(null)
+          // Stop using currently selected item
+          gameStore.setBuildMode(null)
           break
         case 'r':
         case 'R':
-          store.rotateBuildDirection()
+          gameStore.rotateBuildDirection()
           break
       }
     }

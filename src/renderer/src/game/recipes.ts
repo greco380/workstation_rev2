@@ -1,8 +1,8 @@
-import type { ItemType } from '../types/game'
+import type { ItemType, OutputType } from '../types/game'
 
 export interface CraftingRecipe {
   ingredients: ItemType[]
-  output: { type: ItemType; count: number }
+  output: { type: OutputType; count: number }
   label: string
 }
 
@@ -13,9 +13,12 @@ export const RECIPES: CraftingRecipe[] = [
     output: { type: 'G', count: 1 },
     label: '4 Iron -> 1 Gear'
   },
-  // Crane arm recipe: 2 Iron + 2 Gear -> 1 Crane Arm
-  // (crane_arm is not an ItemType on belts, so this will be handled
-  //  via playerInventory directly. For now, gear is the main craftable.)
+  {
+    // 2x Iron + 2x Gear -> 1 Crane Arm
+    ingredients: ['I', 'I', 'G', 'G'],
+    output: { type: 'CRANE', count: 1 },
+    label: '2 Iron + 2 Gear -> 1 Crane Arm'
+  }
 ]
 
 /**
@@ -24,7 +27,7 @@ export const RECIPES: CraftingRecipe[] = [
  */
 export function matchRecipe(
   slots: (ItemType | null)[]
-): { type: ItemType; count: number } | null {
+): { type: OutputType; count: number } | null {
   const filled = slots.filter((s): s is ItemType => s !== null)
   if (filled.length !== 4) return null
 

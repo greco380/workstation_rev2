@@ -20,15 +20,18 @@ const ITEM_NAMES: Record<ItemType, string> = {
 
 export function ResourceBar(): React.ReactElement {
   const resources = useGameStore((s) => s.resources)
-  const playerInventory = useGameStore((s) => s.playerInventory)
+  const grid = useGameStore((s) => s.grid)
   const playerCranes = useGameStore((s) => s.playerCranes)
   const lastGrade = useAiStore((s) => s.lastGrade)
 
-  // Inventory: player inventory only (matches HUD)
-  const inventoryItems: Record<ItemType, number> = {
-    P: playerInventory.P || 0,
-    I: playerInventory.I || 0,
-    G: playerInventory.G || 0
+  // Unified inventory: sum all storage bin contents
+  const totalItems: Record<ItemType, number> = { P: 0, I: 0, G: 0 }
+  for (const entity of Object.values(grid)) {
+    if (entity.type === 'storage' && entity.storageState) {
+      for (const [k, v] of Object.entries(entity.storageState.inventory)) {
+        totalItems[k as ItemType] += v
+      }
+    }
   }
 
   return (
@@ -57,9 +60,9 @@ export function ResourceBar(): React.ReactElement {
             {resources.energy.toFixed(1)}
           </div>
         </div>
-        {/* Inventory: player inventory */}
+        {/* Unified storage totals */}
         <div className="flex items-center gap-3 mt-1">
-          {(Object.entries(inventoryItems) as [ItemType, number][]).map(([type, count]) => (
+          {(Object.entries(totalItems) as [ItemType, number][]).map(([type, count]) => (
             <span key={type} className="text-xs" style={{ color: ITEM_COLORS[type] }}>
               {ITEM_NAMES[type]}: {count}
             </span>

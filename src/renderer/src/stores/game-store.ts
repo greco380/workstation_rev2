@@ -7,6 +7,7 @@ import type {
   EntityType,
   Direction,
   ItemType,
+  OutputType,
   BeltItem
 } from '../types/game'
 import {
@@ -378,20 +379,75 @@ export const useGameStore = create<GameStore>((set, get) => ({
       if (!entity?.craftingState?.outputSlot) return state
 
       const output = entity.craftingState.outputSlot
-      const newInventory = { ...state.playerInventory }
-      newInventory[output.type] = (newInventory[output.type] || 0) + output.count
 
-      // If crafted a gear, add to player inventory
-      // If recipe system later produces crane_arm, add to playerCranes
+      // Find nearby storage (1-tile radius) for both consuming inputs and depositing output
+      const offsets = [
+        [-1, -1], [0, -1], [1, -1],
+        [-1, 0],           [1, 0],
+        [-1, 1],  [0, 1],  [1, 1]
+      ]
+      const nearbyStorage: typeof entity[] = []
+      for (const [dx, dy] of offsets) {
+        const key = `${entity.x + dx},${entity.y + dy}`
+        const neighbor = newGrid[key]
+        if (neighbor?.type === 'storage' && neighbor.storageState) {
+          nearbyStorage.push(neighbor)
+        }
+      }
+
+      // Consume input items from nearby storage only
+      const consumed: Record<string, number> = { P: 0, I: 0, G: 0 }
+      for (const slot of entity.craftingState.inputSlots) {
+        if (slot) consumed[slot]++
+      }
+      for (const [itemType, count] of Object.entries(consumed)) {
+        let remaining = count
+        for (const s of nearbyStorage) {
+          if (remaining <= 0) break
+          if (s.storageState) {
+            const has = s.storageState.inventory[itemType as ItemType] || 0
+            const take = Math.min(has, remaining)
+            s.storageState.inventory[itemType as ItemType] -= take
+            remaining -= take
+          }
+        }
+      }
+
       let newCranes = state.playerCranes
-      // (crane_arm crafting would go here once the recipe supports it)
+
+      // Special case: crane arm output goes to playerCranes
+      if (output.type === 'CRANE') {
+        newCranes += output.count
+      } else {
+        // Deposit crafted output into first nearby storage that exists
+        const outputItemType = output.type as ItemType
+        let deposited = false
+        for (const s of nearbyStorage) {
+          if (s.storageState) {
+            s.storageState.inventory[outputItemType] =
+              (s.storageState.inventory[outputItemType] || 0) + output.count
+            deposited = true
+            break
+          }
+        }
+        // Fallback: if no nearby storage, put in playerInventory
+        if (!deposited) {
+          const newInventory = { ...state.playerInventory }
+          newInventory[outputItemType] = (newInventory[outputItemType] || 0) + output.count
+          entity.craftingState = {
+            inputSlots: [null, null, null, null],
+            outputSlot: null
+          }
+          return { grid: newGrid, playerInventory: newInventory, playerCranes: newCranes }
+        }
+      }
 
       entity.craftingState = {
         inputSlots: [null, null, null, null],
         outputSlot: null
       }
 
-      return { grid: newGrid, playerInventory: newInventory, playerCranes: newCranes }
+      return { grid: newGrid, playerCranes: newCranes }
     })
   },
 
